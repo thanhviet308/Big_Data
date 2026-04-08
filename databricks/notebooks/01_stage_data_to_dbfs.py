@@ -12,20 +12,29 @@
 import os
 from pathlib import Path
 
-# Repo root (Databricks Repos)
-repo_root = Path(os.getcwd())
-print("CWD:", repo_root)
+
+def find_repo_root(start: Path) -> Path:
+	p = start
+	while p != p.parent:
+		if (p / "src").exists() and (p / "data").exists():
+			return p
+		p = p.parent
+	return start
+
+
+# When running this notebook, CWD is often .../databricks/notebooks
+repo_root = find_repo_root(Path(os.getcwd()))
+print("CWD:", Path(os.getcwd()))
+print("REPO_ROOT:", repo_root)
 
 raw_src = repo_root / "data" / "raw" / "PS_20174392719_1491204439457_log.csv"
 blacklist_src = repo_root / "data" / "blacklist" / "blacklist_accounts.csv"
 
-raw_dst = Path("/dbfs/FileStore/fraud/raw.csv")
-blacklist_dst = Path("/dbfs/FileStore/fraud/blacklist_accounts.csv")
+raw_dbfs = "dbfs:/FileStore/fraud/raw.csv"
+blacklist_dbfs = "dbfs:/FileStore/fraud/blacklist_accounts.csv"
 
-raw_dst.parent.mkdir(parents=True, exist_ok=True)
-
-print("Copy RAW:", raw_src, "->", raw_dst)
-print("Copy BLACKLIST:", blacklist_src, "->", blacklist_dst)
+print("Copy RAW:", raw_src, "->", raw_dbfs)
+print("Copy BLACKLIST:", blacklist_src, "->", blacklist_dbfs)
 
 # COMMAND ----------
 
@@ -33,7 +42,8 @@ print("Copy BLACKLIST:", blacklist_src, "->", blacklist_dst)
 # Workspace path for repo file is accessible via local filesystem in Repos as well,
 # but dbutils is clearer here.
 
-dbutils.fs.cp(f"file:{raw_src}", "dbfs:/FileStore/fraud/raw.csv", True)
-dbutils.fs.cp(f"file:{blacklist_src}", "dbfs:/FileStore/fraud/blacklist_accounts.csv", True)
+dbutils.fs.mkdirs("dbfs:/FileStore/fraud")
+dbutils.fs.cp(f"file:{raw_src}", raw_dbfs, True)
+dbutils.fs.cp(f"file:{blacklist_src}", blacklist_dbfs, True)
 
 print("✅ Staged to DBFS")

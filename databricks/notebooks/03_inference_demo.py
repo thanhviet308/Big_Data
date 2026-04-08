@@ -6,10 +6,23 @@
 
 import os
 import pandas as pd
+from pathlib import Path
 
-# Must match where model was saved
-os.environ.setdefault("FRAUD_MODEL_PATH", "/dbfs/FileStore/fraud/fraud_model.pkl")
-os.environ.setdefault("FRAUD_BLACKLIST_PATH", "/dbfs/FileStore/fraud/blacklist_accounts.csv")
+# Serverless-safe: copy artifacts from DBFS to local tmp, then point env vars there
+MODEL_DBFS = "dbfs:/FileStore/fraud/fraud_model.pkl"
+BLACKLIST_DBFS = "dbfs:/FileStore/fraud/blacklist_accounts.csv"
+
+LOCAL_DIR = Path("/tmp/fraud")
+LOCAL_DIR.mkdir(parents=True, exist_ok=True)
+
+MODEL_LOCAL = str(LOCAL_DIR / "fraud_model.pkl")
+BLACKLIST_LOCAL = str(LOCAL_DIR / "blacklist_accounts.csv")
+
+dbutils.fs.cp(MODEL_DBFS, f"file:{MODEL_LOCAL}", True)
+dbutils.fs.cp(BLACKLIST_DBFS, f"file:{BLACKLIST_LOCAL}", True)
+
+os.environ["FRAUD_MODEL_PATH"] = MODEL_LOCAL
+os.environ["FRAUD_BLACKLIST_PATH"] = BLACKLIST_LOCAL
 
 from src.detection.fraud_detector import detect_fraud
 
