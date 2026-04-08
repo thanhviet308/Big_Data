@@ -28,7 +28,10 @@ Các script hỗ trợ override bằng biến môi trường (phù hợp cho Dat
 - `FRAUD_BLACKLIST_PATH`
 - `FRAUD_MODEL_PATH`
 
-Trên Databricks, để pandas/joblib đọc được, nên dùng dạng `/dbfs/...` (ví dụ `/dbfs/FileStore/fraud/raw.csv`).
+Trên Databricks, workspace của bạn có thể **chặn** `dbfs:/FileStore` (Public DBFS root).
+
+Các notebook mặc định dùng `dbfs:/tmp/fraud_detection`.
+Bạn có thể đổi location bằng biến môi trường `FRAUD_DBFS_BASE`.
 
 ## Streaming (Kafka) lưu ý
 

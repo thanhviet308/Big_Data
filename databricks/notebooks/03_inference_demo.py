@@ -9,8 +9,10 @@ import pandas as pd
 from pathlib import Path
 
 # Serverless-safe: copy artifacts from DBFS to local tmp, then point env vars there
-MODEL_DBFS = "dbfs:/FileStore/fraud/fraud_model.pkl"
-BLACKLIST_DBFS = "dbfs:/FileStore/fraud/blacklist_accounts.csv"
+DBFS_BASE = os.getenv("FRAUD_DBFS_BASE", "dbfs:/tmp/fraud_detection")
+
+MODEL_DBFS = f"{DBFS_BASE}/fraud_model.pkl"
+BLACKLIST_DBFS = f"{DBFS_BASE}/blacklist_accounts.csv"
 
 LOCAL_DIR = Path("/tmp/fraud")
 LOCAL_DIR.mkdir(parents=True, exist_ok=True)

@@ -30,8 +30,9 @@ print("REPO_ROOT:", repo_root)
 raw_src = repo_root / "data" / "raw" / "PS_20174392719_1491204439457_log.csv"
 blacklist_src = repo_root / "data" / "blacklist" / "blacklist_accounts.csv"
 
-raw_dbfs = "dbfs:/FileStore/fraud/raw.csv"
-blacklist_dbfs = "dbfs:/FileStore/fraud/blacklist_accounts.csv"
+DBFS_BASE = os.getenv("FRAUD_DBFS_BASE", "dbfs:/tmp/fraud_detection")
+raw_dbfs = f"{DBFS_BASE}/raw.csv"
+blacklist_dbfs = f"{DBFS_BASE}/blacklist_accounts.csv"
 
 print("Copy RAW:", raw_src, "->", raw_dbfs)
 print("Copy BLACKLIST:", blacklist_src, "->", blacklist_dbfs)
@@ -42,7 +43,7 @@ print("Copy BLACKLIST:", blacklist_src, "->", blacklist_dbfs)
 # Workspace path for repo file is accessible via local filesystem in Repos as well,
 # but dbutils is clearer here.
 
-dbutils.fs.mkdirs("dbfs:/FileStore/fraud")
+dbutils.fs.mkdirs(DBFS_BASE)
 dbutils.fs.cp(f"file:{raw_src}", raw_dbfs, True)
 dbutils.fs.cp(f"file:{blacklist_src}", blacklist_dbfs, True)
 

@@ -14,10 +14,12 @@ from pathlib import Path
 # - read raw from DBFS by copying to local tmp
 # - write outputs to local tmp then copy to DBFS
 
-RAW_DBFS = "dbfs:/FileStore/fraud/raw.csv"
-BLACKLIST_DBFS = "dbfs:/FileStore/fraud/blacklist_accounts.csv"
-PROCESSED_DBFS = "dbfs:/FileStore/fraud/processed.csv"
-MODEL_DBFS = "dbfs:/FileStore/fraud/fraud_model.pkl"
+DBFS_BASE = os.getenv("FRAUD_DBFS_BASE", "dbfs:/tmp/fraud_detection")
+
+RAW_DBFS = f"{DBFS_BASE}/raw.csv"
+BLACKLIST_DBFS = f"{DBFS_BASE}/blacklist_accounts.csv"
+PROCESSED_DBFS = f"{DBFS_BASE}/processed.csv"
+MODEL_DBFS = f"{DBFS_BASE}/fraud_model.pkl"
 
 LOCAL_DIR = Path("/tmp/fraud")
 LOCAL_DIR.mkdir(parents=True, exist_ok=True)
@@ -27,7 +29,7 @@ BLACKLIST_LOCAL = str(LOCAL_DIR / "blacklist_accounts.csv")
 PROCESSED_LOCAL = str(LOCAL_DIR / "processed.csv")
 MODEL_LOCAL = str(LOCAL_DIR / "fraud_model.pkl")
 
-dbutils.fs.mkdirs("dbfs:/FileStore/fraud")
+dbutils.fs.mkdirs(DBFS_BASE)
 dbutils.fs.cp(RAW_DBFS, f"file:{RAW_LOCAL}", True)
 dbutils.fs.cp(BLACKLIST_DBFS, f"file:{BLACKLIST_LOCAL}", True)
 
