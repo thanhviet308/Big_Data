@@ -63,7 +63,7 @@ query = (
     .foreachBatch(process_batch)
     .option(
         "checkpointLocation",
-        os.getenv("SPARK_CHECKPOINT_PATH", "dbfs:/tmp/fraud_detection/checkpoints"),
+        os.getenv("SPARK_CHECKPOINT_PATH", "/tmp/fraud_detection/checkpoints"),
     )
     .start()
 )

@@ -1,15 +1,20 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 01 - Stage data to DBFS
+# MAGIC # 01 - Stage data (DBFS-free)
 # MAGIC 
-# MAGIC Mục tiêu: đưa dữ liệu trong repo (git) lên DBFS để dùng ổn định cho Jobs.
+# MAGIC Mục tiêu: đưa dữ liệu trong repo (git) sang một thư mục dùng chung cho notebooks.
+# MAGIC 
+# MAGIC Lưu ý: nhiều workspace/Serverless **chặn Public DBFS root** (`dbfs:/...`), nên notebook này
+# MAGIC mặc định stage vào filesystem local của driver (`/tmp/...`). Nếu bạn có Unity Catalog Volumes,
+# MAGIC hãy set `FRAUD_STORAGE_BASE=/Volumes/<catalog>/<schema>/<volume>/fraud_detection` để có nơi lưu bền vững.
 # MAGIC 
 # MAGIC - Input: `data/raw/...csv`, `data/blacklist/blacklist_accounts.csv` trong repo
-# MAGIC - Output: `/dbfs/FileStore/fraud/...`
+# MAGIC - Output: `${FRAUD_STORAGE_BASE}/raw.csv`, `${FRAUD_STORAGE_BASE}/blacklist_accounts.csv`
 
 # COMMAND ----------
 
 import os
+import shutil
 from pathlib import Path
 
 
@@ -30,21 +35,24 @@ print("REPO_ROOT:", repo_root)
 raw_src = repo_root / "data" / "raw" / "PS_20174392719_1491204439457_log.csv"
 blacklist_src = repo_root / "data" / "blacklist" / "blacklist_accounts.csv"
 
-DBFS_BASE = os.getenv("FRAUD_DBFS_BASE", "dbfs:/tmp/fraud_detection")
-raw_dbfs = f"{DBFS_BASE}/raw.csv"
-blacklist_dbfs = f"{DBFS_BASE}/blacklist_accounts.csv"
+storage_base = Path(os.getenv("FRAUD_STORAGE_BASE", "/tmp/fraud_detection"))
+raw_out = storage_base / "raw.csv"
+blacklist_out = storage_base / "blacklist_accounts.csv"
 
-print("Copy RAW:", raw_src, "->", raw_dbfs)
-print("Copy BLACKLIST:", blacklist_src, "->", blacklist_dbfs)
+print("STORAGE_BASE:", storage_base)
+print("Copy RAW:", raw_src, "->", raw_out)
+print("Copy BLACKLIST:", blacklist_src, "->", blacklist_out)
 
 # COMMAND ----------
 
-# Use dbutils for copy (works with DBFS and workspace paths)
-# Workspace path for repo file is accessible via local filesystem in Repos as well,
-# but dbutils is clearer here.
+storage_base.mkdir(parents=True, exist_ok=True)
 
-dbutils.fs.mkdirs(DBFS_BASE)
-dbutils.fs.cp(f"file:{raw_src}", raw_dbfs, True)
-dbutils.fs.cp(f"file:{blacklist_src}", blacklist_dbfs, True)
+if not raw_src.exists():
+	raise FileNotFoundError(f"Raw CSV not found: {raw_src}")
+if not blacklist_src.exists():
+	raise FileNotFoundError(f"Blacklist CSV not found: {blacklist_src}")
 
-print("✅ Staged to DBFS")
+shutil.copy2(raw_src, raw_out)
+shutil.copy2(blacklist_src, blacklist_out)
+
+print("✅ Staged to:", storage_base)

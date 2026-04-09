@@ -9,34 +9,28 @@
 import os
 from pathlib import Path
 
-# Serverless may not allow direct /dbfs filesystem access.
-# Pattern used here:
-# - read raw from DBFS by copying to local tmp
-# - write outputs to local tmp then copy to DBFS
+# Many workspaces/Serverless disable Public DBFS root (dbfs:/...).
+# Use a plain filesystem base instead (local /tmp by default, or a UC Volume).
 
-DBFS_BASE = os.getenv("FRAUD_DBFS_BASE", "dbfs:/tmp/fraud_detection")
+STORAGE_BASE = Path(os.getenv("FRAUD_STORAGE_BASE", "/tmp/fraud_detection"))
+STORAGE_BASE.mkdir(parents=True, exist_ok=True)
 
-RAW_DBFS = f"{DBFS_BASE}/raw.csv"
-BLACKLIST_DBFS = f"{DBFS_BASE}/blacklist_accounts.csv"
-PROCESSED_DBFS = f"{DBFS_BASE}/processed.csv"
-MODEL_DBFS = f"{DBFS_BASE}/fraud_model.pkl"
+RAW_PATH = str(STORAGE_BASE / "raw.csv")
+BLACKLIST_PATH = str(STORAGE_BASE / "blacklist_accounts.csv")
+PROCESSED_PATH = str(STORAGE_BASE / "processed.csv")
+MODEL_PATH = str(STORAGE_BASE / "fraud_model.pkl")
 
-LOCAL_DIR = Path("/tmp/fraud")
-LOCAL_DIR.mkdir(parents=True, exist_ok=True)
+if not Path(RAW_PATH).exists() or not Path(BLACKLIST_PATH).exists():
+	raise FileNotFoundError(
+		"Missing staged data. Run notebook 01 first, or set FRAUD_STORAGE_BASE to the folder "
+		"that contains raw.csv and blacklist_accounts.csv. "
+		f"Tried: {STORAGE_BASE}"
+	)
 
-RAW_LOCAL = str(LOCAL_DIR / "raw.csv")
-BLACKLIST_LOCAL = str(LOCAL_DIR / "blacklist_accounts.csv")
-PROCESSED_LOCAL = str(LOCAL_DIR / "processed.csv")
-MODEL_LOCAL = str(LOCAL_DIR / "fraud_model.pkl")
-
-dbutils.fs.mkdirs(DBFS_BASE)
-dbutils.fs.cp(RAW_DBFS, f"file:{RAW_LOCAL}", True)
-dbutils.fs.cp(BLACKLIST_DBFS, f"file:{BLACKLIST_LOCAL}", True)
-
-os.environ["FRAUD_RAW_DATA_PATH"] = RAW_LOCAL
-os.environ["FRAUD_BLACKLIST_PATH"] = BLACKLIST_LOCAL
-os.environ["FRAUD_PROCESSED_DATA_PATH"] = PROCESSED_LOCAL
-os.environ["FRAUD_MODEL_PATH"] = MODEL_LOCAL
+os.environ["FRAUD_RAW_DATA_PATH"] = RAW_PATH
+os.environ["FRAUD_BLACKLIST_PATH"] = BLACKLIST_PATH
+os.environ["FRAUD_PROCESSED_DATA_PATH"] = PROCESSED_PATH
+os.environ["FRAUD_MODEL_PATH"] = MODEL_PATH
 
 # COMMAND ----------
 
@@ -55,10 +49,7 @@ ensure_parent_dir(processed_path)
 df_processed.to_csv(processed_path, index=False)
 
 print("✅ Preprocess done. Rows:", len(df_processed))
-
-# Copy processed to DBFS for later tasks
-dbutils.fs.cp(f"file:{PROCESSED_LOCAL}", PROCESSED_DBFS, True)
-print("✅ Saved processed to:", PROCESSED_DBFS)
+print("✅ Saved processed to:", processed_path)
 
 # COMMAND ----------
 
@@ -66,7 +57,4 @@ from src.model.train_model import main as train_main, MODEL_PATH
 
 print("MODEL_PATH:", MODEL_PATH)
 train_main()
-
-# Copy model to DBFS for later tasks
-dbutils.fs.cp(f"file:{MODEL_LOCAL}", MODEL_DBFS, True)
-print("✅ Saved model to:", MODEL_DBFS)
+print("✅ Saved model to:", MODEL_PATH)

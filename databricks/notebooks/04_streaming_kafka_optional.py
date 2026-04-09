@@ -13,17 +13,23 @@
 # COMMAND ----------
 
 import os
+from pathlib import Path
 
 # Example (PHẢI thay bằng Kafka thật truy cập được từ Databricks)
 # os.environ["KAFKA_BOOTSTRAP_SERVERS"] = "broker:9092"
 # os.environ["KAFKA_TOPIC"] = "transactions"
 
 # Optional
-os.environ.setdefault("SPARK_CHECKPOINT_PATH", "dbfs:/tmp/fraud_detection/checkpoints")
+storage_base = Path(os.getenv("FRAUD_STORAGE_BASE", "/tmp/fraud_detection"))
 
-# Ensure model/blacklist paths on DBFS
-os.environ.setdefault("FRAUD_MODEL_PATH", "/dbfs/FileStore/fraud/fraud_model.pkl")
-os.environ.setdefault("FRAUD_BLACKLIST_PATH", "/dbfs/FileStore/fraud/blacklist_accounts.csv")
+# Checkpoint should be in a durable/shared location for multi-node streaming.
+# If DBFS is disabled, prefer a Unity Catalog Volume:
+#   FRAUD_STORAGE_BASE=/Volumes/<catalog>/<schema>/<volume>/fraud_detection
+os.environ.setdefault("SPARK_CHECKPOINT_PATH", str(storage_base / "checkpoints"))
+
+# Model/blacklist trained/staged by notebooks 01/02
+os.environ.setdefault("FRAUD_MODEL_PATH", str(storage_base / "fraud_model.pkl"))
+os.environ.setdefault("FRAUD_BLACKLIST_PATH", str(storage_base / "blacklist_accounts.csv"))
 
 # COMMAND ----------
 

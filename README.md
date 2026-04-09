@@ -14,12 +14,12 @@ Mục tiêu: chạy **toàn bộ** pipeline trên **Databricks** (batch + tuỳ 
 Các notebook nằm ở [databricks/notebooks/](databricks/notebooks/):
 
 1. [Install deps](databricks/notebooks/00_install_deps.py)
-2. [Stage data to DBFS](databricks/notebooks/01_stage_data_to_dbfs.py)
+2. [Stage data (DBFS-free)](databricks/notebooks/01_stage_data_to_dbfs.py)
 3. [Preprocess + Train + Evaluate](databricks/notebooks/02_preprocess_and_train_eval.py)
 4. [Inference demo](databricks/notebooks/03_inference_demo.py)
 5. (Optional) [Streaming Kafka](databricks/notebooks/04_streaming_kafka_optional.py)
 
-## Đường dẫn dữ liệu/model (DBFS)
+## Đường dẫn dữ liệu/model (Databricks-safe)
 
 Các script hỗ trợ override bằng biến môi trường (phù hợp cho Databricks Jobs):
 
@@ -30,8 +30,14 @@ Các script hỗ trợ override bằng biến môi trường (phù hợp cho Dat
 
 Trên Databricks, workspace của bạn có thể **chặn** `dbfs:/FileStore` (Public DBFS root).
 
-Các notebook mặc định dùng `dbfs:/tmp/fraud_detection`.
-Bạn có thể đổi location bằng biến môi trường `FRAUD_DBFS_BASE`.
+Vì vậy các notebook trong repo này **không phụ thuộc DBFS** nữa.
+
+- Mặc định, notebooks stage artifacts vào: `/tmp/fraud_detection`
+- Bạn có thể đổi location bằng biến môi trường `FRAUD_STORAGE_BASE`
+
+Khuyến nghị cho Jobs/Streaming (bền vững & shared): dùng Unity Catalog Volume, ví dụ:
+
+- `FRAUD_STORAGE_BASE=/Volumes/<catalog>/<schema>/<volume>/fraud_detection`
 
 ## Streaming (Kafka) lưu ý
 
@@ -41,7 +47,9 @@ Bạn cần set:
 - `KAFKA_BOOTSTRAP_SERVERS`
 - `KAFKA_TOPIC`
 
-Checkpoint mặc định: `dbfs:/tmp/fraud_detection/checkpoints` (có thể override bằng `SPARK_CHECKPOINT_PATH`).
+Checkpoint mặc định: `/tmp/fraud_detection/checkpoints` (có thể override bằng `SPARK_CHECKPOINT_PATH`).
+
+Nếu chạy streaming multi-node, checkpoint nên trỏ tới storage shared/durable (ví dụ Unity Catalog Volume).
 
 ## Unit tests + CI
 
