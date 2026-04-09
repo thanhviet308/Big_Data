@@ -19,6 +19,17 @@ Các notebook nằm ở [databricks/notebooks/](databricks/notebooks/):
 4. [Inference demo](databricks/notebooks/03_inference_demo.py)
 5. (Optional) [Streaming Kafka](databricks/notebooks/04_streaming_kafka_optional.py)
 
+### Dữ liệu đầu vào (quan trọng)
+
+Trong repo này, `data/raw/` và `data/processed/` đang được `.gitignore` (dataset lớn), nên **Databricks Repos sẽ không có file raw CSV**.
+
+Bạn cần upload raw CSV lên một path mà cluster đọc được (khuyến nghị Unity Catalog Volume), rồi chạy notebook 01 với:
+
+- `FRAUD_STORAGE_BASE=/Volumes/<catalog>/<schema>/<volume>/fraud_detection`
+- `FRAUD_RAW_SOURCE_PATH=/Volumes/<catalog>/<schema>/<volume>/PS_20174392719_1491204439457_log.csv`
+
+Notebook 01 sẽ copy raw + blacklist vào `${FRAUD_STORAGE_BASE}` để notebook 02/03/04 dùng.
+
 ## Đường dẫn dữ liệu/model (Databricks-safe)
 
 Các script hỗ trợ override bằng biến môi trường (phù hợp cho Databricks Jobs):

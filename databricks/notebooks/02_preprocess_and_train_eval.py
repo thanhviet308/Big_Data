@@ -15,16 +15,22 @@ from pathlib import Path
 STORAGE_BASE = Path(os.getenv("FRAUD_STORAGE_BASE", "/tmp/fraud_detection"))
 STORAGE_BASE.mkdir(parents=True, exist_ok=True)
 
-RAW_PATH = str(STORAGE_BASE / "raw.csv")
-BLACKLIST_PATH = str(STORAGE_BASE / "blacklist_accounts.csv")
-PROCESSED_PATH = str(STORAGE_BASE / "processed.csv")
-MODEL_PATH = str(STORAGE_BASE / "fraud_model.pkl")
+RAW_PATH = os.getenv("FRAUD_RAW_DATA_PATH") or str(STORAGE_BASE / "raw.csv")
+BLACKLIST_PATH = os.getenv("FRAUD_BLACKLIST_PATH") or str(STORAGE_BASE / "blacklist_accounts.csv")
+PROCESSED_PATH = os.getenv("FRAUD_PROCESSED_DATA_PATH") or str(STORAGE_BASE / "processed.csv")
+MODEL_PATH = os.getenv("FRAUD_MODEL_PATH") or str(STORAGE_BASE / "fraud_model.pkl")
 
-if not Path(RAW_PATH).exists() or not Path(BLACKLIST_PATH).exists():
+if not Path(RAW_PATH).exists():
 	raise FileNotFoundError(
-		"Missing staged data. Run notebook 01 first, or set FRAUD_STORAGE_BASE to the folder "
-		"that contains raw.csv and blacklist_accounts.csv. "
-		f"Tried: {STORAGE_BASE}"
+		"Raw CSV not found. Run notebook 01 to stage into FRAUD_STORAGE_BASE, or set FRAUD_RAW_DATA_PATH "
+		"to an accessible path (recommended: /Volumes/... on Databricks). "
+		f"Tried: {RAW_PATH}"
+	)
+if not Path(BLACKLIST_PATH).exists():
+	raise FileNotFoundError(
+		"Blacklist CSV not found. Run notebook 01 to stage into FRAUD_STORAGE_BASE, or set FRAUD_BLACKLIST_PATH "
+		"to an accessible path (recommended: /Volumes/... on Databricks). "
+		f"Tried: {BLACKLIST_PATH}"
 	)
 
 os.environ["FRAUD_RAW_DATA_PATH"] = RAW_PATH
